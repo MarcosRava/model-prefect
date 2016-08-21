@@ -1,0 +1,11 @@
+node_modules
+tmp
+npm-debug.log
+*.orig
+newrelic_agent.log
+.DS_Store
+_ign*
+*.tmp
+*.tmp.js
+coverage/
+

@@ -1,0 +1,11 @@
+{
+  "name": "model-prefect",
+  "version": "0.0.0",
+  "description": "A simple model presenter for Betelgeuse",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "marcosrava@gmail.com",
+  "license": "MIT"
+}
