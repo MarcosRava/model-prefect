@@ -41,7 +41,7 @@ let fordPresenter = new ModelPrefect(ford, opts);
 ```js
 
 import Betelgeuse, { Types } from 'betelgeuse';
-import ModelPrefect from 'model-prefect;
+import ModelPrefect from 'model-prefect';
 
 ModelPrefect.goesToBetelgeuse(Betelgeuse); // Add `toPresenter` function to Betelgeuse instances
 
