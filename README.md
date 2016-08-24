@@ -21,19 +21,88 @@ npm install model-prefect
 ```js
 
 let ford = {
-  fullName: "Ford Prefect",
+  firstName: "Ford",
+  lastName: "Prefect",
   nickname: "Ix",
-  species: "Betelgeusian"
+  species: "Betelgeusian",
+  towel : {
+    color: 'red'
+  }
 };
 
 const opts = {
-  "map": {
-    "fullName": "name"
+  "customAttributes": {
+    fullName: function (data, customAttributes) {
+      return {
+        value: data.firstName + ' ' + data.lastName
+      }
+    }
   },
-  "exclude" : ["nickname"]
+  "strategies": {
+    "info": {
+      "map": {
+        "firstName": "name",
+        "towel.color": "towelColor"
+      },
+      "customAttributes": ["fullName"],
+      "exclude" : ["nickname", "lastName", "towel"]
+    },
+    "basicInfo": {
+      "map": {
+        "towel.color": "towelColor"
+      },
+      "customAttributes": ["fullName"],
+      "include": ["species"]
+    }
+  }
 };
-let fordPresenter = new ModelPrefect(ford, opts);
-// {"name": "Ford Prefect", "species": "Betelgeusian"}
+const Presenter = ModelPrefect.presenter(opts);
+let fordPresenter = Presenter.present(ford, "info");
+// {"name": "Ford", "fullName": "Ford Prefect", "towelColor": "red", "species": "Betelgeusian"}
+
+let fordPresenter = Presenter.present(ford, "basicInfo");
+// {"fullName": "Ford Prefect", "towelColor": "red", "species": "Betelgeusian"}
+
+```
+
+#### Using extends
+
+
+```js
+
+class FordPresenter extends ModelPrefect {
+
+  static presenter = {
+    "customAttributes": {
+      fullName: function (data, customAttributes) {
+        return {
+          value: data.firstName + ' ' + data.lastName
+        }
+      }
+    },
+    "strategies": {
+      "info": {
+        "map": {
+          "firstName": "name",
+          "towel.color": "towelColor"
+        },
+        "customAttributes": ["fullName"],
+        "exclude" : ["nickname", "lastName", "towel"]
+      },
+      "basicInfo": {
+        "map": {
+          "towel.color": "towelColor"
+        },
+        "customAttributes": ["fullName"],
+        "include": ["species"]
+      }
+    }
+  }
+
+}
+
+let fordPresenter = new FordPresenter(ford, "basicInfo");
+// {"fullName": "Ford Prefect", "towelColor": "red", "species": "Betelgeusian"}
 
 ```
 ### Usage with [Betelgeuse](https://github.com/MarcosRava/betelgeuse)
@@ -45,10 +114,25 @@ import ModelPrefect from 'model-prefect';
 
 ModelPrefect.goesToBetelgeuse(Betelgeuse); // Add `toPresenter` function to Betelgeuse instances
 
+class Towel extends Betelgeuse {
+
+  static schema = {
+    color: {
+      type: Types.string,
+      minLength: 3
+    }
+  }
+
+}
+
 class Ford extends Betelgeuse {
 
   static schema = {
-    fullName: {
+    firstName: {
+      type: Types.string,
+      minLength: 3
+    },
+    lastName: {
       type: Types.string,
       minLength: 3
     },
@@ -56,83 +140,125 @@ class Ford extends Betelgeuse {
       type: Types.string,
       minLength: 3
     },
+    towel: {
+      ref: Towel
+    }
     species:  Types.string
   }
 
   static presenter = {
-    "map": {
-      "fullName": "name"
+    "customAttributes": {
+      fullName: function (data, customAttributes) {
+        return {
+          value: data.firstName + ' ' + data.lastName
+        }
+      }
+    },
+    "strategies": {
+      "info": {
+        "map": {
+          "firstName": "name",
+          "towel.color": "towelColor"
+        },
+        "customAttributes": ["fullName"],
+        "exclude" : ["nickname", "lastName", "towel"]
+      },
+      "basicInfo": {
+        "map": {
+          "towel.color": "towelColor"
+        },
+        "customAttributes": ["fullName"],
+        "include": ["species"]
+      }
     }
-    "exclude": ["nickname"]
   }
 }
 
 let ford = new Ford({
-  fullName: "Ford Prefect",
+  firstName: "Ford",
+  lastName: "Prefect",
   nickname: "Ix",
-  species: "Betelgeusian"
+  species: "Betelgeusian",
+  towel : {
+    color: 'red'
+  }
 });
 
-ford.toPresenter();
-// {"name": "Ford Prefect", "species": "Betelgeusian"}
+ford.toPresenter('basicInfo');
+// {"fullName": "Ford Prefect", "towelColor": "red", "species": "Betelgeusian"}
 
 ```
 
-Or
+#### Inherit from Betelgeuse instances (?)
 
 ```js
 
 class FordPresenter extends ModelPrefect {
 
   static presenter = {
-    "map": {
-      "fullName": "name"
+    "betelgeuse" : true, // generate validation schema
+    "customAttributes": {
+      fullName: function (data, customAttributes) {
+        return {
+          value: data.firstName + ' ' + data.lastName
+        }
+      }
+    },
+    "strategies": {
+      "info": {
+        "map": {
+          "firstName": "name"
+        },
+        "customAttributes": ["fullName"],
+        "exclude" : ["nickname", "lastName"]
+      },
+      "basicInfo": {
+        "map": {
+          "towel.color": "towelColor"
+        },
+        "customAttributes": ["fullName"],
+        "include": ["species"]
+      }
     }
-    "exclude": ["nickname"]
   }
-
 }
 
-let fordPresenter = new FordPresenter(ford);
-// {"name": "Ford Prefect", "species": "Betelgeusian"}
-
-```
-
-Schema
-
-```js
-
-class FordPresenter extends ModelPrefect {
-
-  static options = {
-    "betelgeuse" : true, // convert validation schema
-    "presenter": {
-      "fullName": "name"
-    }
-    "exclude": ["nickname"]
-  }
-
-}
-
-let fordPresenter = new FordPresenter(ford);
+let fordPresenter = new FordPresenter(ford, 'info');
 /*
 {
   "name": "Ford Prefect",
   "species": "Betelgeusian",
   "_schema": {
+    "fullName": {
+      "type": "string"
+    },
     "name": {
       "type": "string",
       "minLength": 3
     },
     "species": {
       "type": "string"
+    },
+    "towel": {
+      "type: "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "minLength": 3
+        }
+      }
     }
   }
 }
 */
-fordPresenter.isValid
-// Function.isValid
+
+fordPresenter.prototype instance of Betelgeuse
+// true
+fordPresenter.validate
+// Function.validate
 fordPresenter.fields()
-// {"name": "Ford Prefect", "species": "Betelgeusian"}
+// {"name": "Ford", "fullName": "Ford Prefect", towel": { "color": "red"}, "species": "Betelgeusian"}
+
 
 ```
+
